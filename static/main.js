@@ -82,7 +82,7 @@ function generateQRCode(formId) {
 // Register the service worker for offline functionality
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js')
+        navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
                 console.log('Service Worker registered with scope:', registration.scope);
             })
