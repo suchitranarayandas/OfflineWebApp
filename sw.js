@@ -4,6 +4,8 @@ const FILES_TO_CACHE = [
   '/form',
   '/upload_qr',
   '/static/style.css',
+  '/favicon.ico',
+  '/submit',
 ];
 
 // Install event: caching files
