@@ -4,8 +4,7 @@ const FILES_TO_CACHE = [
   '/form',
   '/upload_qr',
   '/static/style.css',
-  '/favicon.ico'
-  // ⚠️ Removed '/submit' since it's a POST route, not safe to cache
+  '/favicon.ico',
 ];
 
 // Install event: caching files
@@ -42,13 +41,12 @@ self.addEventListener('activate', event => {
 
 // Fetch event: serve cached files if offline
 self.addEventListener('fetch', event => {
-  console.log('[ServiceWorker] Fetch', event.request.url);
-
-  // Only intercept GET requests
   if (event.request.method !== 'GET') {
+    // Bypass the service worker for non-GET requests
     return;
   }
 
+  console.log('[ServiceWorker] Fetch', event.request.url);
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);
