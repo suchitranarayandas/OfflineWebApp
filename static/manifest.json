@@ -1,0 +1,9 @@
+{
+  "name": "Bank User Form",
+  "short_name": "BankForm",
+  "start_url": "/landing.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "Form with offline support",
+  "icons": []
+}

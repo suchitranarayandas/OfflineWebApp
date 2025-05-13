@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter User Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="card">
+        <h2>User Data Form</h2>
+        <form id="userForm" class="styled-form">
+            <label>Name: <input type="text" name="name" required></label><br>
+            <label>Email: <input type="email" name="email" required></label><br>
+            <label>Phone: <input type="text" name="phone" required></label><br>
+            <label>Account Type:
+                <select name="accountType">
+                    <option value="Savings">Savings</option>
+                    <option value="Current">Current</option>
+                    <option value="Business">Business</option>
+                </select>
+            </label><br>
+            <button type="submit">Submit</button>
+        </form>
+        <p id="result"></p>
+        <script>
+            document.getElementById("userForm").addEventListener("submit", async function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData.entries());
+                const response = await fetch("/submit", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.id) {
+                    document.getElementById("result").innerHTML = `
+                        Submission successful!<br>
+                        <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
+                    `;
+                } else {
+                    document.getElementById("result").innerText = "Submission failed.";
+                }
+            });
+        </script>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('✅ Service Worker registered', reg))
+                        .catch(err => console.error('❌ Service Worker registration failed:', err));
+                });
+            }
+        </script>
+    </div>
+</body>
+</html>
