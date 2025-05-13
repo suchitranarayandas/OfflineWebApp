@@ -41,15 +41,100 @@ self.addEventListener('activate', event => {
 
 // Fetch event: serve cached files if offline
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') {
-    // Bypass the service worker for non-GET requests
+  if (event.request.method !== 'GET' && event.request.method !== 'POST') {
+    // Bypass the service worker for non-GET or non-POST requests
     return;
   }
 
   console.log('[ServiceWorker] Fetch', event.request.url);
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
+
+  // Handle failed POST requests when offline
+  if (event.request.method === 'POST') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // If POST fails, save the form data locally
+        return saveFormDataLocally(event.request);
+      })
+    );
+  } else {
+    // Handle GET requests: serve from cache or network
+    event.respondWith(
+      caches.match(event.request).then(response => {
+        return response || fetch(event.request);
+      })
+    );
+  }
+});
+
+// Function to save form data locally in IndexedDB (using form_data.db)
+async function saveFormDataLocally(request) {
+  const formData = await request.clone().json();
+  const db = await openIndexedDB();
+  const tx = db.transaction('formData', 'readwrite');
+  tx.store.put(formData);
+  await tx.done;
+  return new Response('Form data saved locally, will retry later');
+}
+
+// Open IndexedDB to store form data (using form_data.db)
+function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('form_data.db', 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject('IndexedDB error');
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      db.createObjectStore('formData', { keyPath: 'id', autoIncrement: true });
+    };
+  });
+}
+
+// Listen for background sync and retry failed POST requests when online
+self.addEventListener('sync', event => {
+  if (event.tag === 'retryFormData') {
+    event.waitUntil(retryFormData());
+  }
+});
+
+// Retry the failed form submissions when the network is available
+async function retryFormData() {
+  const db = await openIndexedDB();
+  const tx = db.transaction('formData', 'readonly');
+  const formDataStore = tx.store;
+  const formDataList = await formDataStore.getAll();
+
+  formDataList.forEach(async (formData) => {
+    try {
+      await fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      // If successful, remove data from IndexedDB
+      const deleteTx = db.transaction('formData', 'readwrite');
+      deleteTx.store.delete(formData.id);
+      await deleteTx.done;
+    } catch (error) {
+      console.error('Failed to send data', error);
+    }
+  });
+}
+
+// Handle QR Code download: save it locally when offline
+self.addEventListener('fetch', event => {
+  if (event.request.url.includes('/download_qr') && event.request.method === 'GET') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        // Cache the QR code image locally
+        const clonedResponse = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clonedResponse);
+        });
+        return response;
+      }).catch(() => {
+        // If offline, serve the cached QR code if available
+        return caches.match(event.request);
+      })
+    );
+  }
 });
