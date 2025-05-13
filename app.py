@@ -29,7 +29,7 @@ conn.commit()
 def home():
     return render_template('landing.html')
 
-@app.route('/static/sw.js')
+@app.route('/sw.js')
 def service_worker():
     return send_file('sw.js', mimetype='application/javascript')
 
