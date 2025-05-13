@@ -4,7 +4,6 @@ const FILES_TO_CACHE = [
   '/form',
   '/upload_qr',
   '/static/style.css',
-  '/static/logo.png',  // <-- Add any static assets your app uses
 ];
 
 // Install event: caching files
