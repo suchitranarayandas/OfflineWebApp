@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: flask-offline-app
+    env: python
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
