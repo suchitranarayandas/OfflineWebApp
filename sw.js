@@ -4,7 +4,6 @@ const FILES_TO_CACHE = [
   '/form',
   '/upload_qr',
   '/static/style.css',
-  '/static/logo.png',  // <-- Add any static assets your app uses
 ];
 
 // Install event: caching files
@@ -13,7 +12,9 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('[ServiceWorker] Pre-caching offline files');
-      return cache.addAll(FILES_TO_CACHE);
+      return Promise.allSettled(
+  FILES_TO_CACHE.map(file => cache.add(file))
+)
     })
   );
   self.skipWaiting();
