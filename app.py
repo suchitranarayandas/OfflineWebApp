@@ -117,13 +117,24 @@ def submit_form():
         print(e)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/generate_qr/<form_id>', methods=['GET'])
-def generate_qr(form_id):
-    qr = qrcode.make(form_id)
-    buffer = BytesIO()
-    qr.save(buffer, format="PNG")
-    buffer.seek(0)
-    return send_file(buffer, mimetype='image/png', as_attachment=True, download_name='user_data_qr.png')
+@app.route('/generate_qr', methods=['POST'])
+def generate_qr():
+    try:
+        data = request.get_json()
+        print("Generating QR for data:", data)
+
+        # Convert to JSON string to encode in QR
+        json_data = json.dumps(data)
+        qr = qrcode.make(json_data)
+
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        return send_file(buffer, mimetype='image/png', as_attachment=True, download_name='user_data_qr.png')
+    except Exception as e:
+        print("QR Generation error:", e)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/process_qr', methods=['POST'])
