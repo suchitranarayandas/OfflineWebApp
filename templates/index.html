@@ -25,13 +25,15 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <script>
+    
+    
+    window.addEventListener("load", () => {
     console.log(" Script loaded");
     const form = document.getElementById("userForm");
     if (!form) {
       console.error("❌ Form not found!");
       return;
     }
-    window.addEventListener("load", () => {
     const dbPromise = indexedDB.open("UserFormDB", 1);
     dbPromise.onupgradeneeded = (event) => {
         const db = event.target.result;
