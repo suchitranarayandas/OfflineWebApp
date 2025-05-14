@@ -39,7 +39,6 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event: serve cached files if offline
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' && event.request.method !== 'POST') {
     // Bypass the service worker for non-GET or non-POST requests
@@ -49,16 +48,15 @@ self.addEventListener('fetch', event => {
   console.log('[ServiceWorker] Fetch', event.request.url);
 
   // Handle failed POST requests when offline
-if (event.request.method === 'POST') {
-  const requestClone = event.request.clone(); 
+  if (event.request.method === 'POST') {
+    const requestClone = event.request.clone(); // Clone the request
 
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return saveFormDataLocally(requestClone); // use the clone
-    })
-  );
-}
-  } else {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return saveFormDataLocally(requestClone); // Use the clone if fetch fails
+      })
+    );
+  } else { // This else is now properly paired with the first if statement
     // Handle GET requests: serve from cache or network
     event.respondWith(
       caches.match(event.request).then(response => {
@@ -67,6 +65,7 @@ if (event.request.method === 'POST') {
     );
   }
 });
+
 
 // Function to save form data locally in IndexedDB (using form_data.db)
 async function saveFormDataLocally(request) {
