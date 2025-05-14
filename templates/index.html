@@ -25,6 +25,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <script>
+    window.addEventListener("load", () => {
     const dbPromise = indexedDB.open("UserFormDB", 1);
     dbPromise.onupgradeneeded = (event) => {
         const db = event.target.result;
@@ -115,6 +116,7 @@
             generateAndShowQR(offlineData);
         }
     });
+        });
 </script>
         <script>
             if ('serviceWorker' in navigator) {
