@@ -39,6 +39,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Fetch event: handle both form submissions and QR code download requests
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' && event.request.method !== 'POST') {
     // Bypass the service worker for non-GET or non-POST requests
@@ -56,25 +57,53 @@ self.addEventListener('fetch', event => {
         return saveFormDataLocally(requestClone); // Use the clone if fetch fails
       })
     );
-  } else { // This else is now properly paired with the first if statement
-    // Handle GET requests: serve from cache or network
-    event.respondWith(
-      caches.match(event.request).then(response => {
-        return response || fetch(event.request);
-      })
-    );
+  } else { // This handles GET requests
+    // Check if the request is for QR code download
+    if (event.request.url.includes('/download_qr')) {
+      event.respondWith(
+        fetch(event.request).then(response => {
+          // Cache the QR code image locally
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clonedResponse);
+          });
+          return response;
+        }).catch(() => {
+          // If offline, serve the cached QR code if available
+          return caches.match(event.request);
+        })
+      );
+    } else {
+      // Handle other GET requests: serve from cache or network
+      event.respondWith(
+        caches.match(event.request).then(response => {
+          return response || fetch(event.request);
+        })
+      );
+    }
   }
 });
 
-
 // Function to save form data locally in IndexedDB (using form_data.db)
 async function saveFormDataLocally(request) {
-  const formData = await request.clone().json();
-  const db = await openIndexedDB();
-  const tx = db.transaction('formData', 'readwrite');
-  tx.store.put(formData);
-  await tx.done;
-  return new Response('Form data saved locally, will retry later');
+  try {
+    const formData = await request.clone().json();
+    console.log('[ServiceWorker] Saving form data locally', formData);
+    
+    const db = await openIndexedDB();
+    const tx = db.transaction('formData', 'readwrite');
+    const store = tx.objectStore('formData');  // Make sure the object store is retrieved correctly
+    console.log('[ServiceWorker] Object store retrieved:', store);
+    
+    store.put(formData);
+    await tx.done;
+    console.log('[ServiceWorker] Form data saved locally');
+    
+    return new Response('Form data saved locally, will retry later');
+  } catch (error) {
+    console.error('[ServiceWorker] Error saving form data:', error);
+    return new Response('Failed to save form data locally');
+  }
 }
 
 // Open IndexedDB to store form data (using form_data.db)
@@ -82,10 +111,16 @@ function openIndexedDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('form_data.db', 1);
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject('IndexedDB error');
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      db.createObjectStore('formData', { keyPath: 'id', autoIncrement: true });
+    request.onerror = (event) => {
+      console.error('[ServiceWorker] IndexedDB error', event.target.error);
+      reject('IndexedDB error');
+    };
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('formData')) {
+        db.createObjectStore('formData', { keyPath: 'id', autoIncrement: true });
+        console.log('[ServiceWorker] Object store "formData" created');
+      }
     };
   });
 }
@@ -120,22 +155,3 @@ async function retryFormData() {
     }
   });
 }
-
-// Handle QR Code download: save it locally when offline
-self.addEventListener('fetch', event => {
-  if (event.request.url.includes('/download_qr') && event.request.method === 'GET') {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        // Cache the QR code image locally
-        const clonedResponse = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, clonedResponse);
-        });
-        return response;
-      }).catch(() => {
-        // If offline, serve the cached QR code if available
-        return caches.match(event.request);
-      })
-    );
-  }
-});
