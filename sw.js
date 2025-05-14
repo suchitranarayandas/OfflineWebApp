@@ -49,13 +49,15 @@ self.addEventListener('fetch', event => {
   console.log('[ServiceWorker] Fetch', event.request.url);
 
   // Handle failed POST requests when offline
-  if (event.request.method === 'POST') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        // If POST fails, save the form data locally
-        return saveFormDataLocally(event.request);
-      })
-    );
+if (event.request.method === 'POST') {
+  const requestClone = event.request.clone(); 
+
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return saveFormDataLocally(requestClone); // use the clone
+    })
+  );
+}
   } else {
     // Handle GET requests: serve from cache or network
     event.respondWith(
