@@ -117,31 +117,16 @@ def submit_form():
         print(e)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/generate_qr', methods=['POST'])
-def generate_qr():
+@app.route('/generate_qr/<form_id>', methods=['GET'])
+def generate_qr_download(form_id):
     try:
-        data = request.get_json()
-        form_id = data.get("id")
-        print("Generating QR for form ID:", form_id)
-
-        # Lookup full data in the database
         c.execute("SELECT id, name, email, phone, account_type FROM form_data WHERE id=?", (form_id,))
         row = c.fetchone()
 
         if not row:
             return jsonify({"error": "No form data found for the given ID"}), 404
 
-        # Convert row into a dict
-        user_data = {
-            "id": row[0],
-            "name": row[1],
-            "email": row[2],
-            "phone": row[3],
-            "accountType": row[4]
-        }
-
-        print("Encoding data into QR:", user_data)
-        json_data = json.dumps(user_data)
+        json_data = json.dumps({"id": row[0], "name": row[1], "email": row[2], "phone": row[3], "accountType": row[4]})
         qr = qrcode.make(json_data)
 
         buffer = BytesIO()
@@ -149,11 +134,9 @@ def generate_qr():
         buffer.seek(0)
 
         return send_file(buffer, mimetype='image/png', as_attachment=True, download_name='user_data_qr.png')
-    
     except Exception as e:
         print("QR Generation error:", e)
         return jsonify({"error": str(e)}), 500
-
 
 
 @app.route('/process_qr', methods=['POST'])
