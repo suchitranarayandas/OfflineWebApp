@@ -95,7 +95,7 @@ def upload_qr():
 def submit_form():
     data = request.get_json()
     print("Received data:", data)
-    form_id = data.get("id")
+    form_id = data.get("id",str(uuid.uuid4())
     name = data.get("name")
     email = data.get("email")
     phone = data.get("phone")
