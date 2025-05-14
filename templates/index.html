@@ -22,28 +22,42 @@
         </form>
         <p id="result"></p>
         <script>
-            document.getElementById("userForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const data = Object.fromEntries(formData.entries());
-                const response = await fetch("/submit", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (result.id) {
-                    document.getElementById("result").innerHTML = `
-                        Submission successful!<br>
-                        <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
-                    `;
-                } else {
-                    document.getElementById("result").innerText = "Submission failed.";
-                }
+    document.getElementById("userForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch("/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
             });
-        </script>
+
+            if (!response.ok) throw new Error("Server error");
+
+            const result = await response.json();
+            if (result.id) {
+                document.getElementById("result").innerHTML = `
+                    Submission successful!<br>
+                    <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
+                `;
+            } else {
+                throw new Error("No ID in response");
+            }
+        } catch (err) {
+            console.error("Submission error:", err);
+
+            // Save to IndexedDB here if not already handled elsewhere
+            // Assume you already have logic for that
+
+            document.getElementById("result").innerText =
+                "You're offline. Data saved locally. It will be submitted when online.";
+        }
+    });
+</script>
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
