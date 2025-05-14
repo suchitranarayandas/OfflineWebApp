@@ -94,21 +94,33 @@
         }
     });
 
-    function generateAndShowQR(localId) {
-        const qrCanvas = document.createElement("canvas");
-        QRCode.toCanvas(qrCanvas, localId, function (error) {
-            if (error) {
-                console.error(error);
-                document.getElementById("result").innerText = "QR generation failed.";
-            } else {
-                document.getElementById("result").innerHTML = `
-                    You're offline. Data saved locally.<br>
-                    Here's your offline QR code:<br>
-                `;
-                document.getElementById("result").appendChild(qrCanvas);
-            }
-        });
-    }
+function generateAndShowQR(localId) {
+    const qrCanvas = document.createElement("canvas");
+
+    QRCode.toCanvas(qrCanvas, localId, function (error) {
+        if (error) {
+            console.error(error);
+            document.getElementById("result").innerText = "QR generation failed.";
+        } else {
+            // Generate PNG from canvas
+            const pngUrl = qrCanvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl;
+            downloadLink.download = `${localId}.png`;
+            downloadLink.textContent = "Download QR Code (Offline)";
+            downloadLink.style.display = "block";
+            downloadLink.style.marginTop = "10px";
+
+            // Show result
+            document.getElementById("result").innerHTML = `
+                You're offline. Data saved locally.<br>
+                Here's your offline QR code:<br>
+            `;
+            document.getElementById("result").appendChild(qrCanvas);
+            document.getElementById("result").appendChild(downloadLink);
+        }
+    });
+}
 </script>
         <script>
             if ('serviceWorker' in navigator) {
