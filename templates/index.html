@@ -25,6 +25,12 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <script>
+    console.log(" Script loaded");
+    const form = document.getElementById("userForm");
+    if (!form) {
+      console.error("❌ Form not found!");
+      return;
+    }
     window.addEventListener("load", () => {
     const dbPromise = indexedDB.open("UserFormDB", 1);
     dbPromise.onupgradeneeded = (event) => {
@@ -75,7 +81,6 @@ function generateAndShowQR(userData) {
             `;
             document.getElementById("result").appendChild(qrCanvas);
             document.getElementById("result").appendChild(downloadLink);
-            const pngUrl = qrCanvas.toDataURL("image/png");
             console.log("QR PNG preview:", pngUrl.slice(0, 100));  // 🔍 for debug
 
         }
