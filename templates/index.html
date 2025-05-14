@@ -56,7 +56,7 @@ function generateAndShowQR(userData) {
 
     console.log("Generating offline QR with full data:", jsonString);
 
-    QRCode.toCanvas(qrCanvas, jsonString, function (error) {
+    QRCode.toCanvas(qrCanvas, jsonString, { errorCorrectionLevel: 'H' }, function (error) {
         if (error) {
             console.error(error);
             document.getElementById("result").innerText = "QR generation failed.";
@@ -75,6 +75,9 @@ function generateAndShowQR(userData) {
             `;
             document.getElementById("result").appendChild(qrCanvas);
             document.getElementById("result").appendChild(downloadLink);
+            const pngUrl = qrCanvas.toDataURL("image/png");
+            console.log("QR PNG preview:", pngUrl.slice(0, 100));  // 🔍 for debug
+
         }
     });
 }
