@@ -48,74 +48,61 @@
                 });
             }
 
-            document.getElementById("userForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const data = Object.fromEntries(formData.entries());
+           document.getElementById("userForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
 
-                try {
-                    const response = await fetch("/submit", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data)
-                    });
+    try {
+        const response = await fetch("/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
 
-                    const contentType = response.headers.get("content-type");
-                    if (!response.ok || !contentType || !contentType.includes("application/json")) {
-                        throw new Error("Bad server response");
-                    }
+        const result = await response.json();
 
-                    const result = await response.json();
+        if (result.id) {
+            document.getElementById("result").innerHTML = `
+                Submission successful!<br>
+                <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
+            `;
+        }
+    } catch (err) {
+        console.warn("⚠️ Probably offline:", err);
+        const localId = `offline-${Date.now()}`;
+        const offlineData = { id: localId, ...data };
+        await saveToIndexedDB(offlineData);
+        generateAndShowQR(offlineData);  // ✅ Pass full object, not just ID
+    }
+});
 
-                    if (result.id) {
-                        document.getElementById("result").innerHTML = `
-                            Submission successful!<br>
-                            <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
-                        `;
-                    } else if (result.message?.includes("saved locally")) {
-                        const localId = `offline-${Date.now()}`;
-                        const offlineData = { id: localId, ...data };
-                        await saveToIndexedDB(offlineData);
-                        generateAndShowQR(offlineData);
-                    } else {
-                        throw new Error("No ID in response");
-                    }
+     function generateAndShowQR(userData) {
+    const qrCanvas = document.createElement("canvas");
+    const jsonString = JSON.stringify(userData); // ✅ encode full JSON
 
-                } catch (err) {
-                    console.error("Submission error:", err);
-                    const localId = `offline-${Date.now()}`;
-                    const offlineData = { id: localId, ...data };
-                    await saveToIndexedDB(offlineData);
-                    generateAndShowQR(offlineData);
-                }
-            });
+    QRCode.toCanvas(qrCanvas, jsonString, function (error) {
+        if (error) {
+            console.error(error);
+            document.getElementById("result").innerText = "QR generation failed.";
+        } else {
+            const pngUrl = qrCanvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl;
+            downloadLink.download = `${userData.id}.png`;
+            downloadLink.textContent = "Download QR Code (Offline)";
+            downloadLink.style.display = "block";
+            downloadLink.style.marginTop = "10px";
 
-            function generateAndShowQR(userData) {
-                const qrCanvas = document.createElement("canvas");
-                const jsonString = JSON.stringify(userData);
-
-                QRCode.toCanvas(qrCanvas, jsonString, function (error) {
-                    if (error) {
-                        console.error(error);
-                        document.getElementById("result").innerText = "QR generation failed.";
-                    } else {
-                        const pngUrl = qrCanvas.toDataURL("image/png");
-                        const downloadLink = document.createElement("a");
-                        downloadLink.href = pngUrl;
-                        downloadLink.download = `${userData.id}.png`;
-                        downloadLink.textContent = "Download QR Code (Offline)";
-                        downloadLink.style.display = "block";
-                        downloadLink.style.marginTop = "10px";
-
-                        document.getElementById("result").innerHTML = `
-                            You're offline. Data saved locally.<br>
-                            Here's your offline QR code:<br>
-                        `;
-                        document.getElementById("result").appendChild(qrCanvas);
-                        document.getElementById("result").appendChild(downloadLink);
-                    }
-                });
-            }
+            document.getElementById("result").innerHTML = `
+                You're offline. Data saved locally.<br>
+                Here's your offline QR code:<br>
+            `;
+            document.getElementById("result").appendChild(qrCanvas);
+            document.getElementById("result").appendChild(downloadLink);
+        }
+    });
+}
         </script>
         <script>
             if ('serviceWorker' in navigator) {
