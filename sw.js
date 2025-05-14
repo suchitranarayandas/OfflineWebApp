@@ -40,6 +40,10 @@ self.addEventListener('activate', event => {
 
 // Fetch event: handle both form submissions and QR code download requests
 self.addEventListener('fetch', event => {
+  if (request.method === 'POST' && url.pathname === '/upload_qr') {
+    console.log('[ServiceWorker] Skipping /upload_qr POST request');
+    return; // Let it go directly to the network
+  }
   if (event.request.method !== 'GET' && event.request.method !== 'POST') {
     return;
   }
