@@ -168,6 +168,10 @@ def process_qr():
 def favicon():
     return '', 204
 
+@app.route('/routes')
+def show_routes():
+    return '<br>'.join(str(rule) for rule in app.url_map.iter_rules())
+
 def push_to_salesforce(data):
     try:
         custom_object_api = 'User_Application_form_ABSA__c'
