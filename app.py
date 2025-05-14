@@ -105,7 +105,14 @@ def submit_form():
         c.execute("INSERT OR IGNORE INTO form_data (id, name, email, phone, account_type) VALUES (?, ?, ?, ?, ?)",
                   (form_id, name, email, phone, account_type))
         conn.commit()
-        return jsonify({"status": "received", "id": form_id})
+        return jsonify({
+            "status": "received",
+            "id": form_id,
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "accountType": account_type
+        })
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
