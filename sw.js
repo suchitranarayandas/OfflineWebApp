@@ -2,7 +2,6 @@ const CACHE_NAME = 'app-cache-v1';
 const FILES_TO_CACHE = [
   '/',
   '/form',
-  '/upload_qr',
   '/static/style.css',
   '/favicon.ico',
 ];
