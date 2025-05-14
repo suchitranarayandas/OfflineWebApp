@@ -89,6 +89,10 @@ self.addEventListener('fetch', event => {
   }
 });
 
+function generateUUID() {
+  return crypto.randomUUID(); // Modern and simple
+}
+
 // Function to save form data locally in IndexedDB (using form_data.db)
 async function saveFormDataLocally(request) {
   try {
@@ -107,6 +111,7 @@ try {
   return new Response('Failed to save form data locally', { status: 400 });
 }
     formData._url = request.url;
+    formData.id = formData.id || generateUUID();
     console.log('[ServiceWorker] Saving form data locally', formData);
     
     const db = await openIndexedDB();
@@ -180,7 +185,7 @@ async function retryFormData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
+      console.log('[Retry] Response:', response.status, text);
       if (response.ok) {
         const deleteTx = db.transaction('formData', 'readwrite');
         deleteTx.objectStore('formData').delete(formData.id);
