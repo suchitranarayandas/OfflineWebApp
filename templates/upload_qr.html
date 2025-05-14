@@ -12,18 +12,33 @@
             <button type="submit">Upload</button>
         </form>
         <pre id="output"></pre>
-        <script>
-            document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const response = await fetch("/upload_qr", {
-                    method: "POST",
-                    body: formData
-                });
-                const result = await response.json();
-                document.getElementById("output").textContent = JSON.stringify(result, null, 2);
+       <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch("/upload_qr", {
+                method: "POST",
+                body: formData
             });
-        </script>
+
+            const contentType = response.headers.get("Content-Type") || '';
+            let result;
+
+            if (contentType.includes("application/json")) {
+                result = await response.json();
+            } else {
+                const text = await response.text();
+                result = { error: text };
+            }
+
+            document.getElementById("output").textContent = JSON.stringify(result, null, 2);
+        } catch (err) {
+            document.getElementById("output").textContent = "Error: " + err.message;
+        }
+    });
+</script>
     </div>
 </body>
 </html>
