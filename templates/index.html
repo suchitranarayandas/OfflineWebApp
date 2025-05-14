@@ -49,6 +49,7 @@
     }
 
     function generateAndShowQR(userData) {
+        console.log("Generating QR for:", userData); 
         const qrCanvas = document.createElement("canvas");
         const jsonString = JSON.stringify(userData);
 
