@@ -67,13 +67,32 @@
 
             const result = await response.json();
 
-            if (result.id) {
-                // ✅ ONLINE success — show a hyperlink to download
-                document.getElementById("result").innerHTML = `
-                    Submission successful!<br>
-                    <a href="/generate_qr/${result.id}" target="_blank">Download QR Code</a>
-                `;
-            } else if (result.message?.includes("saved locally")) {
+            if (!result.id) throw new Error("No ID in response");
+
+// Append form ID back to data if it was generated server-side
+data.id = result.id;
+
+// ✅ Now request QR generation with full data
+const qrResponse = await fetch("/generate_qr", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+});
+
+if (!qrResponse.ok) throw new Error("QR generation failed");
+
+const qrBlob = await qrResponse.blob();
+const qrUrl = URL.createObjectURL(qrBlob);
+
+const link = document.createElement("a");
+link.href = qrUrl;
+link.download = "user_data_qr.png";
+link.textContent = "Download QR Code";
+link.style.display = "block";
+
+document.getElementById("result").innerHTML = `Submission successful!<br>`;
+document.getElementById("result").appendChild(link);
+} else if (result.message?.includes("saved locally")) {
                 // ⚠️ OFFLINE: service worker handled saving
                 const localId = `offline-${Date.now()}`;
                 await saveToIndexedDB({ id: localId, ...data });
