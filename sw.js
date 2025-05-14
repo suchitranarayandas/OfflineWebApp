@@ -94,7 +94,7 @@ async function saveFormDataLocally(request) {
     const tx = db.transaction('formData', 'readwrite');
     const store = tx.objectStore('formData');  // Make sure the object store is retrieved correctly
     console.log('[ServiceWorker] Object store retrieved:', store);
-    
+    console.log(formData)
     store.put(formData);
     await tx.done;
     console.log('[ServiceWorker] Form data saved locally');
