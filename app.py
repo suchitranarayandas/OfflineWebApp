@@ -63,34 +63,30 @@ def upload_qr():
     if not data:
         return jsonify({'error': 'QR code not recognized'}), 400
 
-    form_id = data.strip()
-    print("after decoding the qr")
-    print(form_id)
-    # Lookup form data in the database
-    c.execute("SELECT id, name, email, phone, account_type FROM form_data WHERE id = ?", (form_id,))
-    row = c.fetchone()
-    print("unwrapped qr code")
-    print(row)
+    print("Decoded QR content:", data)
 
-    if not row:
-        return jsonify({'error': 'No form data found for the QR ID'}), 404
+    try:
+        parsed = json.loads(data)
 
-    form_data = {
-        "Name": row[1],
-        "Email_Address__c": row[2],
-        "Phone__c": row[3],
-        "Type__c": row[4]
-    }
+        form_data = {
+            "Name": parsed.get("name"),
+            "Email_Address__c": parsed.get("email"),
+            "Phone__c": parsed.get("phone"),
+            "Type__c": parsed.get("accountType")
+        }
 
-    salesforce_result = push_to_salesforce(form_data)
-    print("data")
-    print(form_data)
-    print("salesforce_result")
-    print(salesforce_result)
-    if len(salesforce_result['errors']) == 0:
-        return jsonify('Data Uploaded to Salesforce Successfully')
-    else:
-        return jsonify({"error"}), 500
+        print("Parsed form data:", form_data)
+
+        salesforce_result = push_to_salesforce(form_data)
+        print("Salesforce response:", salesforce_result)
+
+        if salesforce_result.get("success", False) or not salesforce_result.get("errors"):
+            return jsonify(" Data uploaded to Salesforce successfully.")
+        else:
+            return jsonify({"error": "Salesforce upload failed", "details": salesforce_result}), 500
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'QR code does not contain valid JSON-formatted user data.'}), 400
 
 @app.route('/submit', methods=['POST'])
 def submit_form():
