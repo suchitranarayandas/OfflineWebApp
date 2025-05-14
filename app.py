@@ -233,4 +233,6 @@ def push_to_salesforce(data):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=443, ssl_context=("cert.pem", "key.pem"))
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
