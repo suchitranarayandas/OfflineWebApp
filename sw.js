@@ -185,7 +185,8 @@ async function retryFormData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      console.log('[Retry] Response:', response.status, text);
+      const responseText = await response.text();
+      console.log('[Retry] Response:', response.status, responseText); 
       if (response.ok) {
         const deleteTx = db.transaction('formData', 'readwrite');
         deleteTx.objectStore('formData').delete(formData.id);
