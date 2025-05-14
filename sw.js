@@ -106,7 +106,7 @@ try {
   console.error('[ServiceWorker] Failed to parse form data:', err);
   return new Response('Failed to save form data locally', { status: 400 });
 }
-
+    formData._url = request.url;
     console.log('[ServiceWorker] Saving form data locally', formData);
     
     const db = await openIndexedDB();
@@ -165,21 +165,24 @@ self.addEventListener('sync', event => {
 async function retryFormData() {
   const db = await openIndexedDB();
   const tx = db.transaction('formData', 'readonly');
-  const formDataStore = tx.store;
+  const formDataStore = tx.objectStore('formData');
   const formDataList = await formDataStore.getAll();
 
-  formDataList.forEach(async (formData) => {
+  for (const formData of formDataList) {
     try {
-      await fetch('/submit', {
+      const { _url, ...payload } = formData;
+
+      await fetch(_url || '/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
+
       const deleteTx = db.transaction('formData', 'readwrite');
-      deleteTx.store.delete(formData.id);
+      deleteTx.objectStore('formData').delete(formData.id);
       await deleteTx.done;
     } catch (error) {
       console.error('Failed to send data', error);
     }
-  });
+  }
 }
