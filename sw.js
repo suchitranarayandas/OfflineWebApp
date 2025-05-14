@@ -99,7 +99,9 @@ async function saveFormDataLocally(request) {
     await tx.done;
     console.log('[ServiceWorker] Form data saved locally');
     
-    return new Response('Form data saved locally, will retry later');
+    return new Response(JSON.stringify({ message: 'Form data saved locally, will retry later' }), {
+  headers: { 'Content-Type': 'application/json' }
+});
   } catch (error) {
     console.error('[ServiceWorker] Error saving form data:', error);
     return new Response('Failed to save form data locally');
