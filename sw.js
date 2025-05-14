@@ -92,7 +92,21 @@ self.addEventListener('fetch', event => {
 // Function to save form data locally in IndexedDB (using form_data.db)
 async function saveFormDataLocally(request) {
   try {
-    const formData = await request.clone().json();
+    let formData;
+const contentType = request.headers.get('Content-Type') || '';
+const requestBody = await request.clone().text();
+
+try {
+  if (contentType.includes('application/json')) {
+    formData = JSON.parse(requestBody);
+  } else {
+    throw new Error('Unsupported Content-Type for offline handling');
+  }
+} catch (err) {
+  console.error('[ServiceWorker] Failed to parse form data:', err);
+  return new Response('Failed to save form data locally', { status: 400 });
+}
+
     console.log('[ServiceWorker] Saving form data locally', formData);
     
     const db = await openIndexedDB();
@@ -103,7 +117,14 @@ async function saveFormDataLocally(request) {
     store.put(formData);
     await tx.done;
     console.log('[ServiceWorker] Form data saved locally');
-    
+    if ('sync' in self.registration) {
+  try {
+    await self.registration.sync.register('retryFormData');
+    console.log('[ServiceWorker] Sync registered');
+  } catch (e) {
+    console.error('[ServiceWorker] Sync registration failed:', e);
+  }
+}
     return new Response(JSON.stringify({ message: 'Form data saved locally, will retry later' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
