@@ -20,39 +20,41 @@ document.getElementById('userForm').addEventListener('submit', async function(ev
     account_type: document.getElementById('accountType').value,
   };
 
-  // If the user is online, submit the data to the server
   if (navigator.onLine) {
-    try {
-      const response = await fetch('/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const response = await fetch('/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (result.status === 'received') {
-        generateQRCode(result.id);
-        document.getElementById('qrSection').style.display = 'block';
-      }
-    } catch (error) {
-      console.error('Error:', error);
+    if (result.status === 'received') {
+      generateQRCode(result.id);
+      document.getElementById('qrSection').style.display = 'block';
+    } else {
+      throw new Error('Server did not accept the data');
     }
-  } else {
-    // If the user is offline, save data to IndexedDB and generate QR code
-    console.log('Offline: saving form data to IndexedDB');
-    await saveToIndexedDB(formData);
+  } catch (error) {
+    console.error('Error during online submission:', error);
 
-    // Generate QR code for offline form submission
+    // Fallback to offline saving
+    await saveToIndexedDB(formData);
     generateQRCode(formData.id);
     document.getElementById('qrSection').style.display = 'block';
-
-    // Show a message to the user
-    alert('You are offline! Your data has been saved locally and the QR code is ready for download.');
+    alert('Network issue! Data saved locally and QR code generated.');
   }
-
+} else {
+  // Offline already detected
+  console.log('Offline: saving form data to IndexedDB');
+  await saveToIndexedDB(formData);
+  generateQRCode(formData.id);
+  document.getElementById('qrSection').style.display = 'block';
+  alert('You are offline! Your data has been saved locally and the QR code is ready for download.');
+}
   document.getElementById('userForm').reset(); // Clear the form after submission
 });
 
