@@ -49,33 +49,36 @@
         });
     }
 
-    function generateAndShowQR(userData) {
-        console.log("Generating QR for:", userData); 
-        const qrCanvas = document.createElement("canvas");
-        const jsonString = JSON.stringify(userData);
+function generateAndShowQR(userData) {
+    const qrCanvas = document.createElement("canvas");
+    
+    const jsonString = JSON.stringify(userData);  // ✅ full data goes in
 
-        QRCode.toCanvas(qrCanvas, jsonString, function (error) {
-            if (error) {
-                console.error(error);
-                document.getElementById("result").innerText = "QR generation failed.";
-            } else {
-                const pngUrl = qrCanvas.toDataURL("image/png");
-                const downloadLink = document.createElement("a");
-                downloadLink.href = pngUrl;
-                downloadLink.download = `${userData.id}.png`;
-                downloadLink.textContent = "Download QR Code (Offline)";
-                downloadLink.style.display = "block";
-                downloadLink.style.marginTop = "10px";
+    console.log("Generating offline QR with full data:", jsonString);
 
-                document.getElementById("result").innerHTML = `
-                    You're offline. Data saved locally.<br>
-                    Here's your offline QR code:<br>
-                `;
-                document.getElementById("result").appendChild(qrCanvas);
-                document.getElementById("result").appendChild(downloadLink);
-            }
-        });
-    }
+    QRCode.toCanvas(qrCanvas, jsonString, function (error) {
+        if (error) {
+            console.error(error);
+            document.getElementById("result").innerText = "QR generation failed.";
+        } else {
+            const pngUrl = qrCanvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl;
+            downloadLink.download = `${userData.id}.png`;
+            downloadLink.textContent = "Download QR Code (Offline)";
+            downloadLink.style.display = "block";
+            downloadLink.style.marginTop = "10px";
+
+            document.getElementById("result").innerHTML = `
+                You're offline. Data saved locally.<br>
+                Here's your offline QR code:<br>
+            `;
+            document.getElementById("result").appendChild(qrCanvas);
+            document.getElementById("result").appendChild(downloadLink);
+        }
+    });
+}
+
 
     document.getElementById("userForm").addEventListener("submit", async function (e) {
         e.preventDefault();
