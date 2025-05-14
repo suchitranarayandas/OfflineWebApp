@@ -42,39 +42,44 @@ self.addEventListener('activate', event => {
 // Fetch event: handle both form submissions and QR code download requests
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' && event.request.method !== 'POST') {
-    // Bypass the service worker for non-GET or non-POST requests
     return;
   }
 
   console.log('[ServiceWorker] Fetch', event.request.url);
 
-  // Handle failed POST requests when offline
+  // ✅ [MODIFIED] Handle failed POST requests (offline or server errors)
   if (event.request.method === 'POST') {
-    const requestClone = event.request.clone(); // Clone the request
+    const requestClone = event.request.clone();
 
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return saveFormDataLocally(requestClone); // Use the clone if fetch fails
-      })
+      fetch(event.request)
+        .then(response => {
+          // ✅ [ADDED] Save locally if response status is not OK
+          if (!response.ok) {
+            console.warn('[ServiceWorker] Server error, saving locally');
+            return saveFormDataLocally(requestClone);
+          }
+          return response;
+        })
+        .catch(() => {
+          // Network failure — save locally
+          return saveFormDataLocally(requestClone);
+        })
     );
-  } else { // This handles GET requests
-    // Check if the request is for QR code download
+  } else {
     if (event.request.url.includes('/download_qr')) {
       event.respondWith(
         fetch(event.request).then(response => {
-          // Cache the QR code image locally
           const clonedResponse = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, clonedResponse);
           });
           return response;
         }).catch(() => {
-          // If offline, serve the cached QR code if available
           return caches.match(event.request);
         })
       );
     } else {
-      // Handle other GET requests: serve from cache or network
       event.respondWith(
         caches.match(event.request).then(response => {
           return response || fetch(event.request);
@@ -92,16 +97,17 @@ async function saveFormDataLocally(request) {
     
     const db = await openIndexedDB();
     const tx = db.transaction('formData', 'readwrite');
-    const store = tx.objectStore('formData');  // Make sure the object store is retrieved correctly
+    const store = tx.objectStore('formData');
     console.log('[ServiceWorker] Object store retrieved:', store);
     console.log(formData)
     store.put(formData);
     await tx.done;
     console.log('[ServiceWorker] Form data saved locally');
     
-    return new Response(JSON.stringify({ message: 'Form data saved locally, will retry later' }), {status: 200,
-  headers: { 'Content-Type': 'application/json' }
-});
+    return new Response(JSON.stringify({ message: 'Form data saved locally, will retry later' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
     console.error('[ServiceWorker] Error saving form data:', error);
     return new Response('Failed to save form data locally');
@@ -148,7 +154,6 @@ async function retryFormData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      // If successful, remove data from IndexedDB
       const deleteTx = db.transaction('formData', 'readwrite');
       deleteTx.store.delete(formData.id);
       await deleteTx.done;
