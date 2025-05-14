@@ -56,16 +56,24 @@
     }
 
 function generateAndShowQR(userData) {
-    const qrCanvas = document.createElement("canvas");
-    
-    const jsonString = JSON.stringify(userData);  // ✅ full data goes in
+    const resultPara = document.getElementById("result");
+    resultPara.innerHTML = `
+        You're offline. Data saved locally.<br>
+        Here's your offline QR code:<br>
+    `;
 
+    // ✅ Create a sibling div to hold canvas + link
+    const qrContainer = document.createElement("div");
+    qrContainer.style.marginTop = "10px";
+
+    const qrCanvas = document.createElement("canvas");
+    const jsonString = JSON.stringify(userData);
     console.log("Generating offline QR with full data:", jsonString);
 
     QRCode.toCanvas(qrCanvas, jsonString, { errorCorrectionLevel: 'H' }, function (error) {
         if (error) {
-            console.error(error);
-            document.getElementById("result").innerText = "QR generation failed.";
+            console.error("QR generation failed:", error);
+            resultPara.innerText = "QR generation failed.";
         } else {
             const pngUrl = qrCanvas.toDataURL("image/png");
             const downloadLink = document.createElement("a");
@@ -73,16 +81,13 @@ function generateAndShowQR(userData) {
             downloadLink.download = `${userData.id}.png`;
             downloadLink.textContent = "Download QR Code (Offline)";
             downloadLink.style.display = "block";
-            downloadLink.style.marginTop = "10px";
+            downloadLink.style.marginTop = "8px";
 
-            document.getElementById("result").innerHTML = `
-                You're offline. Data saved locally.<br>
-                Here's your offline QR code:<br>
-            `;
-            document.getElementById("result").appendChild(qrCanvas);
-            document.getElementById("result").appendChild(downloadLink);
-            console.log("QR PNG preview:", pngUrl.slice(0, 100));  // 🔍 for debug
+            qrContainer.appendChild(qrCanvas);
+            qrContainer.appendChild(downloadLink);
 
+            // ✅ Insert QR container after <p>
+            resultPara.insertAdjacentElement("afterend", qrContainer);
         }
     });
 }
