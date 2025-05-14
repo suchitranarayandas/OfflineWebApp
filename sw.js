@@ -166,23 +166,34 @@ async function retryFormData() {
   const db = await openIndexedDB();
   const tx = db.transaction('formData', 'readonly');
   const formDataStore = tx.objectStore('formData');
-  const formDataList = await formDataStore.getAll();
+
+  const formDataList = await new Promise((resolve, reject) => {
+    const getAllRequest = formDataStore.getAll();
+    getAllRequest.onsuccess = () => resolve(getAllRequest.result);
+    getAllRequest.onerror = () => reject(getAllRequest.error);
+  });
 
   for (const formData of formDataList) {
     try {
-      const { _url, ...payload } = formData;
-
-      await fetch(_url || '/submit', {
+      const response = await fetch(formData._url || '/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
-      const deleteTx = db.transaction('formData', 'readwrite');
-      deleteTx.objectStore('formData').delete(formData.id);
-      await deleteTx.done;
+      if (response.ok) {
+        const deleteTx = db.transaction('formData', 'readwrite');
+        deleteTx.objectStore('formData').delete(formData.id);
+        await new Promise((resolve, reject) => {
+          deleteTx.oncomplete = resolve;
+          deleteTx.onerror = reject;
+        });
+        console.log('[ServiceWorker] Resubmitted and deleted:', formData);
+      } else {
+        console.warn('[ServiceWorker] Resubmission failed with server error:', response.status);
+      }
     } catch (error) {
-      console.error('Failed to send data', error);
+      console.error('[ServiceWorker] Failed to resend data:', error);
     }
   }
 }
