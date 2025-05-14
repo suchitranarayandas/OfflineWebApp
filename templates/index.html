@@ -20,7 +20,7 @@
             </label><br>
             <button type="submit">Submit</button>
         </form>
-        <p id="result"></p>
+        <div id="result"></div>
         <!-- QR code lib (client-side) -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
@@ -99,12 +99,13 @@ function generateAndShowQR(userData) {
             try {
                 result = await response.json();
             } catch (e) {
-                console.warn("⚠️ No JSON response — likely offline or SW response");
+                console.warn("No JSON response — likely offline or SW response");
             }
 
             if (!response.ok || !result || !result.id) {
                 const localId = `offline-${Date.now()}`;
                 const offlineData = { id: localId, ...data };
+                console.log("Offline fallback triggered. Saving and generating QR:", offlineData);
                 await saveToIndexedDB(offlineData);
                 generateAndShowQR(offlineData);
             } else {
@@ -128,8 +129,8 @@ function generateAndShowQR(userData) {
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('/sw.js')
-                        .then(reg => console.log('✅ Service Worker registered', reg))
-                        .catch(err => console.error('❌ Service Worker registration failed:', err));
+                        .then(reg => console.log('Service Worker registered', reg))
+                        .catch(err => console.error('Service Worker registration failed:', err));
                 });
             }
         </script>
